@@ -1,0 +1,3 @@
+#Enable for background
+myeyes.use_background(Enable to have a background) bool false
+

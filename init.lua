@@ -1,3 +1,5 @@
+local background = core.settings:get_bool("myeyes.use_background", false)
+
 local huds = {}
 --Most of the code is by degiel1982
 -- Helper function to extract the name of the node the player is pointing at.
@@ -65,10 +67,19 @@ end
 
 minetest.register_on_joinplayer(function(player)
     local player_name = player:get_player_name()
-
+	if background then
+		local hud_id = player:hud_add({
+    		hud_elem_type = "image",
+    		position  = {x = 0.95, y = 0.11},
+    		offset    = {x = -150, y = -25},
+    		text      = "myeyes_background.png",
+    		alignment = 0,
+    		scale     = { x = 1, y = 1},
+		})
+	end
 	local hud_id = player:hud_add({
     	hud_elem_type = "text",
-    	position  = {x = 0.95, y = 0.94},
+    	position  = {x = 0.95, y = 0.09},
     	offset    = {x = -150, y = -25},
     	text      = "",
     	alignment = 0,
@@ -79,7 +90,7 @@ minetest.register_on_joinplayer(function(player)
 	})
 	local hud_id2 = player:hud_add({
     	hud_elem_type = "text",
-    	position  = {x = 0.95, y = 0.98},
+    	position  = {x = 0.95, y = 0.12},
     	offset    = {x = -150, y = -25},
     	text      = "",
     	alignment = 0,
