@@ -6,4 +6,6 @@ Simply point at something and it tells you in the bottom right hand side of the 
 It tells both the name and the technical name.
 
 --------------------------------------------------------------------------------------
-Licence - MIT
+Code Licence - MIT
+
+Media Licence - CC0
