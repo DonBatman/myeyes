@@ -21,14 +21,14 @@ function get_pointed_node_name_from_player(player, node_above, distance)
     local end_pos = vector.add(start_pos, vector.multiply(direction, ray_length))
 
     -- Create a ray from the player's eye in the direction they're looking
-    local ray = minetest.raycast(start_pos, end_pos, false, false)
+    local ray = core.raycast(start_pos, end_pos, false, false)
 
     -- Iterate over the objects hit by the ray
     for pointed in ray do
         if pointed.type == "node" then
             -- Decide which node to consider based on the node_above flag
             local hit_pos = node_above and vector.round(pointed.under) or vector.round(pointed.above)
-            local node = minetest.get_node(hit_pos)
+            local node = core.get_node(hit_pos)
             return node.name  -- Return the name of the node
         end
     end
@@ -46,17 +46,17 @@ local ray_length = distance
 local end_pos = vector.add(start_pos, vector.multiply(direction, ray_length))
 
 -- Create a ray from the player's eye in the direction they're looking
-local ray = minetest.raycast(start_pos, end_pos, false, false)
+local ray = core.raycast(start_pos, end_pos, false, false)
 
 -- Iterate over the objects hit by the ray
 for pointed in ray do
 if pointed.type == "node" then
 -- Decide which node to consider based on the node_above flag
 local hit_pos = node_above and vector.round(pointed.under) or vector.round(pointed.above)
-local node = minetest.get_node(hit_pos)
+local node = core.get_node(hit_pos)
 
 -- Retrieve the description of the node
-local node_def = minetest.registered_nodes[node.name]
+local node_def = core.registered_nodes[node.name]
 if node_def then
 return node_def.description -- Return the description of the node
 end
@@ -66,11 +66,11 @@ end
 return nil -- If no node is hit, return nil
 end
 
-minetest.register_on_joinplayer(function(player)
+core.register_on_joinplayer(function(player)
     local player_name = player:get_player_name()
 	if background then
 		local hud_id = player:hud_add({
-    		hud_elem_type = "image",
+    		type = "image",
     		position  = {x = 0.95, y = 0.105},
     		offset    = {x = -150, y = -25},
     		text      = "myeyes_background.png",
@@ -79,7 +79,7 @@ minetest.register_on_joinplayer(function(player)
 		})
 	end
 	local hud_id = player:hud_add({
-    	hud_elem_type = "text",
+    	type = "text",
     	position  = {x = 0.95, y = 0.09},
     	offset    = {x = -150, y = -25},
     	text      = "",
@@ -90,7 +90,7 @@ minetest.register_on_joinplayer(function(player)
     	style 	  = 1,
 	})
 	local hud_id2 = player:hud_add({
-    	hud_elem_type = "text",
+    	type = "text",
     	position  = {x = 0.95, y = 0.12},
     	offset    = {x = -150, y = -25},
     	text      = "",
