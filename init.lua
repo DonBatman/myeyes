@@ -1,131 +1,134 @@
 local background = core.settings:get_bool("myeyes.use_background", false)
-
 local huds = {}
+local old_node = {}
+local user_settings = {} -- Track who has the HUD enabled
 
--- Most of the code is by degiel1982
--- Helper function to extract the name of the node the player is pointing at.
--- Parameters:
---   player: The player object.
---   node_above: Boolean flag; if true, returns the node below the rayhit (pointed.under),
---               otherwise returns the node above (pointed.above).
--- distance: How far you want to detect
--- Returns:
---   The name of the node that was hit, or nil if no node was found within the ray's range.
+-- [Helper Functions]
 function get_pointed_node_name_from_player(player, node_above, distance)
-    -- Calculate the player's eye position (rough approximation)
-    local start_pos = vector.add(player:get_pos(), { x = 0, y = 1.5, z = 0 })
+    local pos = player:get_pos()
+    if not pos then return nil end
+    local start_pos = vector.add(pos, { x = 0, y = 1.5, z = 0 })
     local direction = player:get_look_dir()
-
-    -- Define the max distance for the raycast
-    local ray_length = distance
-    local end_pos = vector.add(start_pos, vector.multiply(direction, ray_length))
-
-    -- Create a ray from the player's eye in the direction they're looking
+    local end_pos = vector.add(start_pos, vector.multiply(direction, distance))
     local ray = core.raycast(start_pos, end_pos, false, false)
 
-    -- Iterate over the objects hit by the ray
     for pointed in ray do
         if pointed.type == "node" then
-            -- Decide which node to consider based on the node_above flag
             local hit_pos = node_above and vector.round(pointed.under) or vector.round(pointed.above)
-            local node = core.get_node(hit_pos)
-            return node.name  -- Return the name of the node
+            return core.get_node(hit_pos).name
         end
     end
-
-    return nil  -- If no node is hit, return nil
+    return nil
 end
 
 function get_pointed_node_description_from_player(player, node_above, distance)
--- Calculate the player's eye position (rough approximation)
-local start_pos = vector.add(player:get_pos(), { x = 0, y = 1.5, z = 0 })
-local direction = player:get_look_dir()
+    local pos = player:get_pos()
+    if not pos then return nil end
+    local start_pos = vector.add(pos, { x = 0, y = 1.5, z = 0 })
+    local direction = player:get_look_dir()
+    local end_pos = vector.add(start_pos, vector.multiply(direction, distance))
+    local ray = core.raycast(start_pos, end_pos, false, false)
 
--- Define the max distance for the raycast
-local ray_length = distance
-local end_pos = vector.add(start_pos, vector.multiply(direction, ray_length))
-
--- Create a ray from the player's eye in the direction they're looking
-local ray = core.raycast(start_pos, end_pos, false, false)
-
--- Iterate over the objects hit by the ray
-for pointed in ray do
-if pointed.type == "node" then
--- Decide which node to consider based on the node_above flag
-local hit_pos = node_above and vector.round(pointed.under) or vector.round(pointed.above)
-local node = core.get_node(hit_pos)
-
--- Retrieve the description of the node
-local node_def = core.registered_nodes[node.name]
-if node_def then
-return node_def.description -- Return the description of the node
-end
-end
+    for pointed in ray do
+        if pointed.type == "node" then
+            local hit_pos = node_above and vector.round(pointed.under) or vector.round(pointed.above)
+            local node = core.get_node(hit_pos)
+            local node_def = core.registered_nodes[node.name]
+            return node_def and node_def.description or nil
+        end
+    end
+    return nil
 end
 
-return nil -- If no node is hit, return nil
-end
-
+-- 1. Setup HUDs and Settings when player joins
 core.register_on_joinplayer(function(player)
-    local player_name = player:get_player_name()
-	if background then
-		local hud_id = player:hud_add({
-    		type = "image",
-    		position  = {x = 0.95, y = 0.105},
-    		offset    = {x = -150, y = -25},
-    		text      = "myeyes_background.png",
-    		alignment = 0,
-    		scale     = { x = 1, y = 1},
-		})
-	end
-	local hud_id = player:hud_add({
-    	type = "text",
-    	position  = {x = 0.95, y = 0.09},
-    	offset    = {x = -150, y = -25},
-    	text      = "",
-    	alignment = 0,
-    	scale     = { x = 100, y = 100},
-    	number    = 0x25de29,
-    	size	  = { x = 1.7},
-    	style 	  = 1,
-	})
-	local hud_id2 = player:hud_add({
-    	type = "text",
-    	position  = {x = 0.95, y = 0.12},
-    	offset    = {x = -150, y = -25},
-    	text      = "",
-    	alignment = 0,
-    	scale     = { x = 100, y = 100},
-    	number    = 0xdb9c10,
-    	size	  = { x = 1},
-    	style 	  = 2,
-	})
-	
-	huds[player_name] = hud_id
-
-	local old_node = {}
-	local distance = 9
-	local node_above = true
-	
-	core.register_globalstep(function(dtime)
-		local p_name = player:get_player_name()
-    		
-		if not old_node[p_name] then
-			old_node[p_name] = ""
-		end
-    	
-		local node_name =  get_pointed_node_name_from_player(player, node_above , distance )
-		if node_name ~= nil and node_name ~= old_node[p_name] then
-			player:hud_change(hud_id2,"text", node_name)
-			old_node[p_name] = node_name
-		end
-    	
-		local node_def =  get_pointed_node_description_from_player(player, node_above , distance )
-		if node_def ~= nil then
-			player:hud_change(hud_id,"text", node_def)
-		end
-	end)
+    local name = player:get_player_name()
+    user_settings[name] = true -- Default to ON
+    
+    local ids = {}
+    if background then
+        ids.bg = player:hud_add({
+            type = "image",
+            position  = {x = 0.95, y = 0.105},
+            offset    = {x = -150, y = -25},
+            text      = "myeyes_background.png",
+            scale     = { x = 1, y = 1},
+        })
+    end
+    
+    ids.desc = player:hud_add({
+        type = "text",
+        position  = {x = 0.95, y = 0.09},
+        offset    = {x = -150, y = -25},
+        text      = "",
+        number    = 0x25de29,
+        size      = { x = 1.7},
+    })
+    
+    ids.name = player:hud_add({
+        type = "text",
+        position  = {x = 0.95, y = 0.12},
+        offset    = {x = -150, y = -25},
+        text      = "",
+        number    = 0xdb9c10,
+        size      = { x = 1},
+    })
+    
+    huds[name] = ids
+    old_node[name] = ""
 end)
 
+-- 2. Toggle Command
+core.register_chatcommand("myeyes", {
+    params = "on/off",
+    description = "Enable or disable the block info HUD",
+    func = function(name, param)
+        local player = core.get_player_by_name(name)
+        if not player or not huds[name] then return false, "Player not found." end
 
+        if param == "off" then
+            user_settings[name] = false
+            -- Hide current text
+            player:hud_change(huds[name].desc, "text", "")
+            player:hud_change(huds[name].name, "text", "")
+            return true, "MyEyes HUD disabled."
+        elseif param == "on" then
+            user_settings[name] = true
+            return true, "MyEyes HUD enabled."
+        else
+            return false, "Use /myeyes on or /myeyes off"
+        end
+    end,
+})
 
+-- 3. Cleanup
+core.register_on_leaveplayer(function(player)
+    local name = player:get_player_name()
+    huds[name] = nil
+    old_node[name] = nil
+    user_settings[name] = nil
+end)
+
+-- 4. The Global Manager (Checks user_settings)
+local timer = 0
+core.register_globalstep(function(dtime)
+    timer = timer + dtime
+    if timer < 0.2 then return end
+    timer = 0
+
+    for _, player in ipairs(core.get_connected_players()) do
+        local name = player:get_player_name()
+        
+        -- Only process if player has HUD enabled and exists
+        if user_settings[name] and huds[name] and player:get_pos() then
+            local node_name = get_pointed_node_name_from_player(player, true, 9)
+            local node_desc = get_pointed_node_description_from_player(player, true, 9)
+            
+            if node_name ~= old_node[name] then
+                player:hud_change(huds[name].name, "text", node_name or "")
+                old_node[name] = node_name or ""
+            end
+            player:hud_change(huds[name].desc, "text", node_desc or "")
+        end
+    end
+end)
