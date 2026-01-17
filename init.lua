@@ -62,7 +62,7 @@ core.register_on_joinplayer(function(player)
         offset    = {x = -150, y = -25},
         text      = "",
         number    = 0x25de29,
-        size      = { x = 1.7},
+        size      = 1.7,
     })
     
     ids.name = player:hud_add({
@@ -71,7 +71,7 @@ core.register_on_joinplayer(function(player)
         offset    = {x = -150, y = -25},
         text      = "",
         number    = 0xdb9c10,
-        size      = { x = 1},
+        size      = 1,
     })
     
     huds[name] = ids
