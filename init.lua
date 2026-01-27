@@ -1,9 +1,8 @@
 local background = core.settings:get_bool("myeyes.use_background", false)
 local huds = {}
 local old_node = {}
-local user_settings = {} -- Track who has the HUD enabled
+local user_settings = {}
 
--- [Helper Functions]
 function get_pointed_node_name_from_player(player, node_above, distance)
     local pos = player:get_pos()
     if not pos then return nil end
@@ -40,10 +39,9 @@ function get_pointed_node_description_from_player(player, node_above, distance)
     return nil
 end
 
--- 1. Setup HUDs and Settings when player joins
 core.register_on_joinplayer(function(player)
     local name = player:get_player_name()
-    user_settings[name] = true -- Default to ON
+    user_settings[name] = true
     
     local ids = {}
     if background then
@@ -78,7 +76,6 @@ core.register_on_joinplayer(function(player)
     old_node[name] = ""
 end)
 
--- 2. Toggle Command
 core.register_chatcommand("myeyes", {
     params = "on/off",
     description = "Enable or disable the block info HUD",
@@ -88,7 +85,6 @@ core.register_chatcommand("myeyes", {
 
         if param == "off" then
             user_settings[name] = false
-            -- Hide current text
             player:hud_change(huds[name].desc, "text", "")
             player:hud_change(huds[name].name, "text", "")
             return true, "MyEyes HUD disabled."
@@ -101,7 +97,6 @@ core.register_chatcommand("myeyes", {
     end,
 })
 
--- 3. Cleanup
 core.register_on_leaveplayer(function(player)
     local name = player:get_player_name()
     huds[name] = nil
@@ -109,7 +104,6 @@ core.register_on_leaveplayer(function(player)
     user_settings[name] = nil
 end)
 
--- 4. The Global Manager (Checks user_settings)
 local timer = 0
 core.register_globalstep(function(dtime)
     timer = timer + dtime
@@ -119,7 +113,6 @@ core.register_globalstep(function(dtime)
     for _, player in ipairs(core.get_connected_players()) do
         local name = player:get_player_name()
         
-        -- Only process if player has HUD enabled and exists
         if user_settings[name] and huds[name] and player:get_pos() then
             local node_name = get_pointed_node_name_from_player(player, true, 9)
             local node_desc = get_pointed_node_description_from_player(player, true, 9)
